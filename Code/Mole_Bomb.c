@@ -406,6 +406,9 @@ int main() {
                 // 폭탄을 잡지 않고 시간이 지난 경우
                 if (random[timelimit] > 10) {
                     printf("폭탄을 터트리지 않고 넘어감");
+                    score_mole -= 1;
+                    clcd_input2(score_player, score_mole);
+                    printf("두더지점수 : %d \n", score_mole);
                     for (x2 = 0; x2 < 8; x2 ++)
                     {
                         printmatrix[x2] = printmatrix[x2] - bomb[random[timelimit] - 11][x2];
