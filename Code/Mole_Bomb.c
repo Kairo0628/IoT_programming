@@ -234,7 +234,7 @@ int main() {
             case 8: num = 8; printf("num : %d random : %d c : %d\n", num, random[0], c); usleep(100000);break;
             case 9: num = 9; printf("num : %d random : %d c : %d\n", num, random[0], c); usleep(100000);break;
             case 10: num = 10; printf("num : %d random : %d c : %d\n", num, random[0], c); usleep(100000);break;
-            case 12: isStop = 1; printf("num : %d random : %d c : %d\n", num, random, c); break; 
+            case 12: isStop = 1; printf("num : %d c : %d\n", num, c); break; 
         }
 
         //두더지 맞췄는지 검사
@@ -247,7 +247,7 @@ int main() {
                     count++;
                     score_player -= 2;
                     printf("점수 : %d\n", score_player);
-                    clcd_input2(score_player, score_mole)
+                    clcd_input2(score_player, score_mole);
 
                     for (x1 = 0; x1 < 8; x1++)
                     {
@@ -265,7 +265,7 @@ int main() {
                     for (x3 = 0; x3 < stage; x3++)
                     {
                         if (random[x3] > 10) {
-                            if (renumber == random[x3] = 10)
+                            if (renumber == random[x3] - 10)
                             {
                                 renumber = rand() % 9 + 1;
                                 x3--;
@@ -282,7 +282,7 @@ int main() {
 
                     if (isBomb == 1) {
                         random[z] = renumber + 10;
-                        isbomb = 0;
+                        isBomb = 0;
                     }
                     else {
                         random[z] = renumber;
@@ -320,7 +320,7 @@ int main() {
                     for (d = 0; d < stage; d++)
                     {
                         if (random[d] > 10) {
-                            if (renumber == random[d] = 10)
+                            if (renumber == random[d] - 10)
                             {
                                 renumber = rand() % 9 + 1;
                                 d--;
@@ -337,7 +337,7 @@ int main() {
 
                     if (isBomb == 1) {
                         random[z] = renumber + 10;
-                        isbomb = 0;
+                        isBomb = 0;
                     }
                     else {
                         random[z] = renumber;
