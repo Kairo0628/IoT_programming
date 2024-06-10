@@ -95,6 +95,15 @@ int main() {
         return 1;
     }
 
+    int led;
+    unsigned char led_data;
+    led = open(led_d, O_RDWR);
+    if (led < 0) {
+        printf("led error\n");
+        exit(0);
+    }
+
+
     srand(time(NULL));
     printf("DIP 스위치를 켜면 게임이 시작됩니다.\n");
 
@@ -106,177 +115,187 @@ int main() {
             // DIP 스위치 값에 따라 난이도 설정
             if (dipval & 0x01) {
                 stagetime = 40; // DIP 스위치 1번 ON: 난이도 1 (가장 쉬움)
+                led_data = 0x01;
             } else if (dipval & 0x02) {
                 stagetime = 35; // DIP 스위치 2번 ON: 난이도 2
+                led_data = 0x02;
             } else if (dipval & 0x04) {
                 stagetime = 30; // DIP 스위치 3번 ON: 난이도 3
+                led_data = 0x04;
             } else if (dipval & 0x08) {
                 stagetime = 25; // DIP 스위치 4번 ON: 난이도 4
+                led_data = 0x08;
             } else if (dipval & 0x10) {
                 stagetime = 20; // DIP 스위치 5번 ON: 난이도 5
+                led_data = 0x10;
             } else if (dipval & 0x20) {
                 stagetime = 15; // DIP 스위치 6번 ON: 난이도 6
+                led_data = 0x20;
             } else if (dipval & 0x40) {
                 stagetime = 10; // DIP 스위치 7번 ON: 난이도 7
+                led_data = 0x40;
             } else if (dipval & 0x80) {
                 stagetime = 5;  // DIP 스위치 8번 ON: 난이도 8 (가장 어려움)
+                led_data = 0x80;
             }
+            write(led, &led_data, sizeof(led_data));
 
-        // 게임 초기화
-        int count = 0;
-        int score_mole = 0;
-        int score_player = 0;
-        int startmole = 1;
+            // 게임 초기화
+            int count = 0;
+            int score_mole = 0;
+            int score_player = 0;
+            int startmole = 1;
 
-        while (1) {
-            // 두더지 생성
-            if (startmole == 1) {
-                startmole = 0;
-                random_mole = (rand() % 9) + 1;
-                timeleft = (rand() % 10);
+            while (1) {
+                // 두더지 생성
+                if (startmole == 1) {
+                    startmole = 0;
+                    random_mole = (rand() % 9) + 1;
+                    timeleft = (rand() % 10);
 
-                // 폭탄 생성 확률에 따라 폭탄 두더지 설정
-                if (rand() % bomb_probability == 0)
-                    bomb_mole_index = random_mole - 1;
-                else
-                    bomb_mole_index = -1;
-
-                int p;
-                for (p = 0; p < 8; p++) {
-                    if (bomb_mole_index == random_mole - 1)
-                        printmatrix[p] = bomb_mole[bomb_mole_index][p];
+                    // 폭탄 생성 확률에 따라 폭탄 두더지 설정
+                    if (rand() % bomb_probability == 0)
+                        bomb_mole_index = random_mole - 1;
                     else
-                        printmatrix[p] = mole[random_mole - 1][p];
-                }
-            }
+                        bomb_mole_index = -1;
 
-            dot = open(dot_d, O_RDWR);
-            if (dot < 0) {
-                printf("dot error\n");
-                exit(0);
-            }
-            write(dot, &printmatrix, sizeof(printmatrix));
-            usleep(100000);
-            close(dot);
-
-            tact = open(tact_d, O_RDWR);
-            read(tact, &c, sizeof(c));
-            close(tact);
-            switch (c) {
-                case 1: num = 1; usleep(100000); break;
-                case 2: num = 2; usleep(100000); break;
-                case 3: num = 3; usleep(100000); break;
-                case 4: num = 4; usleep(100000); break;
-                case 5: num = 5; usleep(100000); break;
-                case 6: num = 6; usleep(100000); break;
-                case 7: num = 7; usleep(100000); break;
-                case 8: num = 8; usleep(100000); break;
-                case 9: num = 9; usleep(100000); break;
-                case 12: isStop = 1; break;
-            }
-
-            // 두더지 맞췄는지 검사
-            if (num == random_mole) {
-                // 폭탄 두더지를 클릭한 경우
-                if (bomb_mole_index == random_mole - 1) {
-                    is_bomb = 1;
-                    score_player -= 2; // 점수 2점 차감
-                    printf("폭탄을 클릭했습니다! 점수: %d\n", score_player);
-                } else {
-                    is_bomb = 0;
-                    count++;
-                    score_player += 1;
-                    printf("점수: %d\n", score_player);
+                    int p;
+                    for (p = 0; p < 8; p++) {
+                        if (bomb_mole_index == random_mole - 1)
+                            printmatrix[p] = bomb_mole[bomb_mole_index][p];
+                        else
+                            printmatrix[p] = mole[random_mole - 1][p];
+                    }
                 }
 
-                clcd_input2(score_player, score_mole);
+                dot = open(dot_d, O_RDWR);
+                if (dot < 0) {
+                    printf("dot error\n");
+                    exit(0);
+                }
+                write(dot, &printmatrix, sizeof(printmatrix));
+                usleep(100000);
+                close(dot);
 
-                // 매트릭스에서 맞은 두더지 제거
-                int q2;
-                for (q2 = 0; q2 < 8; q2++) {
-                    printmatrix[q2] = 0;
+                tact = open(tact_d, O_RDWR);
+                read(tact, &c, sizeof(c));
+                close(tact);
+                switch (c) {
+                    case 1: num = 1; usleep(100000); break;
+                    case 2: num = 2; usleep(100000); break;
+                    case 3: num = 3; usleep(100000); break;
+                    case 4: num = 4; usleep(100000); break;
+                    case 5: num = 5; usleep(100000); break;
+                    case 6: num = 6; usleep(100000); break;
+                    case 7: num = 7; usleep(100000); break;
+                    case 8: num = 8; usleep(100000); break;
+                    case 9: num = 9; usleep(100000); break;
+                    case 12: isStop = 1; break;
                 }
 
-                // 두더지 번호 재지정, 남은시간 재지정
-                timeleft = rand() % 10;
-                num = 0;
-                random_mole = rand() % 9 + 1;
+                // 두더지 맞췄는지 검사
+                if (num == random_mole) {
+                    // 폭탄 두더지를 클릭한 경우
+                    if (bomb_mole_index == random_mole - 1) {
+                        is_bomb = 1;
+                        score_player -= 2; // 점수 2점 차감
+                        printf("폭탄을 클릭했습니다! 점수: %d\n", score_player);
+                    } else {
+                        is_bomb = 0;
+                        count++;
+                        score_player += 1;
+                        printf("점수: %d\n", score_player);
+                    }
 
-                // 폭탄 생성 확률에 따라 폭탄 두더지 설정
-                if (rand() % bomb_probability == 0)
-                    bomb_mole_index = random_mole - 1;
-                else
-                    bomb_mole_index = -1;
+                    clcd_input2(score_player, score_mole);
 
-                // 새로운 두더지 표시
-                int p;
-                for (p = 0; p < 8; p++) {
-                    if (bomb_mole_index == random_mole - 1)
-                        printmatrix[p] = bomb_mole[bomb_mole_index][p];
+                    // 매트릭스에서 맞은 두더지 제거
+                    int q2;
+                    for (q2 = 0; q2 < 8; q2++) {
+                        printmatrix[q2] = 0;
+                    }
+
+                    // 두더지 번호 재지정, 남은시간 재지정
+                    timeleft = rand() % 10;
+                    num = 0;
+                    random_mole = rand() % 9 + 1;
+
+                    // 폭탄 생성 확률에 따라 폭탄 두더지 설정
+                    if (rand() % bomb_probability == 0)
+                        bomb_mole_index = random_mole - 1;
                     else
-                        printmatrix[p] = mole[random_mole - 1][p];
-                }
-            }
+                        bomb_mole_index = -1;
 
-            // 두더지 못잡았을 경우
-            timeleft++;
-            if (timeleft > stagetime) {
-                // 폭탄이 아닌 경우에만 두더지 점수 증가
-                if (bomb_mole_index != random_mole - 1) {
-                    score_mole += 1;
-                    clcd_input2(score_player, score_mole);
-                    printf("두더지점수: %d \n", score_mole);
+                    // 새로운 두더지 표시
+                    int p;
+                    for (p = 0; p < 8; p++) {
+                        if (bomb_mole_index == random_mole - 1)
+                            printmatrix[p] = bomb_mole[bomb_mole_index][p];
+                        else
+                            printmatrix[p] = mole[random_mole - 1][p];
+                    }
                 }
 
-                // 못잡은 두더지 매트릭스에서 제거
-                int q2;
-                for (q2 = 0; q2 < 8; q2++) {
-                    printmatrix[q2] = 0;
-                }
+                // 두더지 못잡았을 경우
+                timeleft++;
+                if (timeleft > stagetime) {
+                    // 폭탄이 아닌 경우에만 두더지 점수 증가
+                    if (bomb_mole_index != random_mole - 1) {
+                        score_mole += 1;
+                        clcd_input2(score_player, score_mole);
+                        printf("두더지점수: %d \n", score_mole);
+                    }
 
-                timeleft = 0;
-                random_mole = rand() % 9 + 1;
+                    // 못잡은 두더지 매트릭스에서 제거
+                    int q2;
+                    for (q2 = 0; q2 < 8; q2++) {
+                        printmatrix[q2] = 0;
+                    }
 
-                // 폭탄 생성 확률에 따라 폭탄 두더지 설정
-                if (rand() % bomb_probability == 0)
-                    bomb_mole_index = random_mole - 1;
-                else
-                    bomb_mole_index = -1;
+                    timeleft = 0;
+                    random_mole = rand() % 9 + 1;
 
-                // 새로운 두더지 표시
-                int p;
-                for (p = 0; p < 8; p++) {
-                    if (bomb_mole_index == random_mole - 1)
-                        printmatrix[p] = bomb_mole[bomb_mole_index][p];
+                    // 폭탄 생성 확률에 따라 폭탄 두더지 설정
+                    if (rand() % bomb_probability == 0)
+                        bomb_mole_index = random_mole - 1;
                     else
-                        printmatrix[p] = mole[random_mole - 1][p];
+                        bomb_mole_index = -1;
+
+                    // 새로운 두더지 표시
+                    int p;
+                    for (p = 0; p < 8; p++) {
+                        if (bomb_mole_index == random_mole - 1)
+                            printmatrix[p] = bomb_mole[bomb_mole_index][p];
+                        else
+                            printmatrix[p] = mole[random_mole - 1][p];
+                    }
                 }
-            }
 
-            // 두더지 혹은 플레이어가 50점넘으면 종료
-            if (score_mole > 50 || score_player > 50) {
-                if (score_mole >= 30) {
-                    printf("두더지 승리!\n");
-                    clcd_input2(score_player, score_mole);
-                }
+                // 두더지 혹은 플레이어가 50점넘으면 종료
+                if (score_mole > 50 || score_player > 50) {
+                    if (score_mole >= 30) {
+                        printf("두더지 승리!\n");
+                        clcd_input2(score_player, score_mole);
+                    }
 
-                if (score_player >= 50) {
-                    printf("플레이어 승리!\n");
-                    clcd_input2(score_player, score_mole);
-                }
-                printf("게임을 종료합니다.\n");
-                break;
-            }
-
-                // DIP 스위치 값 다시 읽기
-                read(dip, &dipval, sizeof(dipval));
-
-                // DIP 스위치가 꺼지면 게임 종료
-                if (dipval == 0) {
+                    if (score_player >= 50) {
+                        printf("플레이어 승리!\n");
+                        clcd_input2(score_player, score_mole);
+                    }
                     printf("게임을 종료합니다.\n");
                     break;
                 }
-            }
+
+                    // DIP 스위치 값 다시 읽기
+                    read(dip, &dipval, sizeof(dipval));
+
+                    // DIP 스위치가 꺼지면 게임 종료
+                    if (dipval == 0) {
+                        close(led);
+                        printf("게임을 종료합니다.\n");
+                        break;
+                    }
+                }
         } else {
             // DIP 스위치가 꺼져 있으면 대기
             
