@@ -1,14 +1,3 @@
-// unsigned char bomb_mole[9][8] = {
-//   {0, 64, 32, 0, 0, 0, 0, 0},
-//   {0, 16, 8, 0, 0, 0, 0, 0},
-//   {0, 4, 2, 0, 0, 0, 0, 0},
-//   {0, 0, 0, 64, 32, 0, 0, 0},
-//   {0, 0, 0, 16, 8, 0, 0, 0},
-//   {0, 0, 0, 4, 2, 0, 0, 0},
-//   {0, 0, 0, 0, 0, 64, 32, 0},
-//   {0, 0, 0, 0, 0, 16, 8, 0},
-//   {0, 0, 0, 0, 0, 4, 2, 0}
-// };
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,6 +37,7 @@ unsigned char bomb_mole[9][8] = {
   {0, 0, 0, 0, 0, 16, 8, 0},
   {0, 0, 0, 0, 0, 4, 2, 0}
 };
+
 unsigned char printmatrix[8] = {0};
 
 void clcd_input2(int score_player, int score_mole) {
@@ -75,6 +65,8 @@ void clcd_input2(int score_player, int score_mole) {
 int main() {
     int bomb_mole_index;
     int is_bomb = 0;
+    int dip;
+    unsigned char dipval = 0;
 
     int dot = 0;
     int tact = 0;
@@ -87,58 +79,56 @@ int main() {
 
     unsigned char c;
 
-    int dip = 0;
-    unsigned char dipval = 0;
+    int led_dev;
+    unsigned char led_data;
+
     dip = open(dip_d, O_RDONLY);
     if (dip < 0) {
         printf("dip error\n");
         return 1;
     }
 
-    int led;
-    unsigned char led_data;
-    led = open(led_d, O_RDWR);
-    if (led < 0) {
-        printf("led error\n");
-        exit(0);
+    led_dev = open(led_d, O_RDWR);
+    if (led_dev < 0) {
+        printf("LED 장치 파일을 열 수 없습니다.\n");
+        return 1;
     }
 
-
     srand(time(NULL));
-    printf("DIP 스위치를 켜면 게임이 시작됩니다.\n");
 
     while (1) {
         // DIP 스위치 값 읽기
         read(dip, &dipval, sizeof(dipval));
 
         if (dipval != 0) {
-            // DIP 스위치 값에 따라 난이도 설정
+            // DIP 스위치 값에 따라 난이도 설정 및 LED 켜기
             if (dipval & 0x01) {
                 stagetime = 40; // DIP 스위치 1번 ON: 난이도 1 (가장 쉬움)
-                led_data = 0x01;
+                led_data = 0x01;    // DIP 스위치 1번 LED 켜기
             } else if (dipval & 0x02) {
                 stagetime = 35; // DIP 스위치 2번 ON: 난이도 2
-                led_data = 0x02;
+                led_data = 0x02;    // DIP 스위치 2번 LED 켜기
             } else if (dipval & 0x04) {
                 stagetime = 30; // DIP 스위치 3번 ON: 난이도 3
-                led_data = 0x04;
+                led_data = 0x04;    // DIP 스위치 3번 LED 켜기
             } else if (dipval & 0x08) {
                 stagetime = 25; // DIP 스위치 4번 ON: 난이도 4
-                led_data = 0x08;
+                led_data = 0x08;    // DIP 스위치 4번 LED 켜기
             } else if (dipval & 0x10) {
                 stagetime = 20; // DIP 스위치 5번 ON: 난이도 5
-                led_data = 0x10;
+                led_data = 0x10;    // DIP 스위치 5번 LED 켜기
             } else if (dipval & 0x20) {
                 stagetime = 15; // DIP 스위치 6번 ON: 난이도 6
-                led_data = 0x20;
+                led_data = 0x20;    // DIP 스위치 6번 LED 켜기
             } else if (dipval & 0x40) {
                 stagetime = 10; // DIP 스위치 7번 ON: 난이도 7
-                led_data = 0x40;
+                led_data = 0x40;    // DIP 스위치 7번 LED 켜기
             } else if (dipval & 0x80) {
                 stagetime = 5;  // DIP 스위치 8번 ON: 난이도 8 (가장 어려움)
-                led_data = 0x80;
+                led_data = 0x80;    // DIP 스위치 8번 LED 켜기
             }
-            write(led, &led_data, sizeof(led_data));
+
+            write(led_dev, &led_data, sizeof(unsigned char)); // 해당 DIP 스위치 LED 켜기
 
             // 게임 초기화
             int count = 0;
@@ -272,37 +262,47 @@ int main() {
                 }
 
                 // 두더지 혹은 플레이어가 50점넘으면 종료
-                if (score_mole > 50 || score_player > 50) {
+                if (score_mole > 30 || score_player > 30) {
                     if (score_mole >= 30) {
-                        printf("두더지 승리!\n");
+                        printf("두더지 승리! 난이도를 다시 선택해주세요!\n");
                         clcd_input2(score_player, score_mole);
                     }
 
-                    if (score_player >= 50) {
-                        printf("플레이어 승리!\n");
+                    if (score_player >= 30) {
+                        printf("플레이어 승리! 난이도를 다시 선택해주세요!\n");
                         clcd_input2(score_player, score_mole);
                     }
-                    printf("게임을 종료합니다.\n");
+                    
+                    sleep(60);
                     break;
                 }
 
-                    // DIP 스위치 값 다시 읽기
-                    read(dip, &dipval, sizeof(dipval));
+                // DIP 스위치 값 다시 읽기
+                read(dip, &dipval, sizeof(dipval));
 
-                    // DIP 스위치가 꺼지면 게임 종료
-                    if (dipval == 0) {
-                        close(led);
-                        printf("게임을 종료합니다.\n");
-                        break;
-                    }
+                // DIP 스위치가 꺼지면 게임 종료
+                if (dipval == 0) {
+                    printf("게임을 종료합니다.\n");
+                    break;
                 }
+            }
         } else {
-            // DIP 스위치가 꺼져 있으면 대기
+            // DIP 스위치가 꺼져 있으면 LED 끄고 대기
+            led_data = 0x00;
+            write(led_dev, &led_data, sizeof(unsigned char)); // 모든 DIP 스위치 LED 끄기
             
-            sleep(2); // 1초 대기
+            sleep(1); // 1초 대기
+                tact = open(tact_d, O_RDWR);
+                read(tact, &c, sizeof(c));
+                close(tact);
+                switch (c) {
+
+                    case 12: isStop = 1; return 0;
+                }
         }
     }
 
     close(dip);
+    close(led_dev);
     return 0;
 }
